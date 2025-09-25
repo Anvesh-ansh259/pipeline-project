@@ -2,7 +2,7 @@ pipeline {
     agent { label 'linuxgit' }
 
     environment {
-        GIT_REPO = 'https://gitlab.com/sandeep160/pipeline-e2e.git'
+        GIT_REPO = 'https://github.com/Anvesh-ansh259/pipeline-project.git'
         BRANCH = 'main'
     }
     
