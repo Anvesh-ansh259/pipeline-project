@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'linuxgit' }
+    agent { label 'linux-git-agent' }
 
     environment {
         GIT_REPO = 'https://github.com/Anvesh-ansh259/pipeline-project.git'
