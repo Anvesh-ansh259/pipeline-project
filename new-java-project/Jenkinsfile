@@ -1,29 +1,30 @@
 pipeline {
     agent { label 'Java-agent' }
-
+    
     stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/Anvesh-ansh259/pipeline-project.git'
-            }
-        }
-
         stage('Build') {
             steps {
-                sh 'mvn clean package'
+                dir('new-java-project') {
+                    sh 'mvn clean package'
+                }
             }
         }
-
+        
         stage('Archive JAR') {
             steps {
-                archiveArtifacts artifacts: 'new-java-project/target/*.jar', fingerprint: true
+                dir('new-java-project') {
+                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                }
             }
         }
     }
-
+    
     post {
-        success { echo 'Build completed successfully!' }
-        failure { echo 'Build failed!' }
+        failure {
+            echo 'Build failed!'
+        }
+        success {
+            echo 'Build succeeded!'
+        }
     }
 }
-
