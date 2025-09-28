@@ -1,0 +1,29 @@
+pipeline {
+    agent { label 'maven' }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Anvesh-ansh259/pipeline-project.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+
+        stage('Archive JAR') {
+            steps {
+                archiveArtifacts artifacts: 'new-java-project/target/*.jar', fingerprint: true
+            }
+        }
+    }
+
+    post {
+        success { echo 'Build completed successfully!' }
+        failure { echo 'Build failed!' }
+    }
+}
+
