@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Clean Workspace') {
             steps {
-                // This deletes the entire workspace before starting
+                // Deletes entire workspace before starting
                 deleteDir()
             }
         }
@@ -17,7 +17,10 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'mvn clean package'
+                // Change to the folder containing pom.xml
+                dir('new-java-project') {
+                    sh 'mvn clean package'
+                }
             }
         }
 
@@ -25,8 +28,8 @@ pipeline {
             steps {
                 sshagent (credentials: ['1f606acc-0968-4f43-854a-89eca8d4a32d']) {
                     sh """
-                    ssh -o StrictHostKeyChecking=no ec2-user@54.226.118.108\\
-                    'nohup java -jar /home/ec2-user/workspace/Java-Build/target/new-java-project-1.0-SNAPSHOT.jar > /home/ec2-user/app.log 2>&1 < /dev/null &'
+                    ssh -o StrictHostKeyChecking=no ec2-user@54.226.118.108 \\
+                    'nohup java -jar /home/ec2-user/workspace/new-java-project/target/new-java-project-1.0-SNAPSHOT.jar > /home/ec2-user/app.log 2>&1 < /dev/null &'
                     """
                 }
             }
