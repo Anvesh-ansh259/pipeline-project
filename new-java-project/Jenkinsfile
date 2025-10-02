@@ -3,10 +3,11 @@ pipeline {
 
     environment {
         GIT_REPO = 'https://github.com/Anvesh-ansh259/pipeline-project.git'
-        BRANCH = 'main'
+        BRANCH   = 'main'
     }
 
     stages {
+
         stage('Clean Workspace') {
             steps {
                 echo 'Cleaning workspace...'
@@ -32,24 +33,27 @@ pipeline {
 
         stage('Deploy to Tomcat') {
             steps {
-                sshagent(['ec2-ssh-key']) {
+                sshagent(['ec2-user']) {
                     echo 'Deploying WAR to Tomcat...'
                     sh '''
                         WAR_FILE=new-java-project/target/new-java-project-1.0-SNAPSHOT.war
+
+                        # Copy WAR to remote server
                         scp -o StrictHostKeyChecking=no $WAR_FILE ec2-user@54.227.175.225:/home/ec2-user/
 
-                        ssh -o StrictHostKeyChecking=no ec2-user@54.227.175.225 'bash -s' << 'ENDSSH'
-                        TOMCAT_HOME=/home/ec2-user/tomcat10
-                        echo "Stopping Tomcat if running..."
-                        $TOMCAT_HOME/bin/shutdown.sh || true
-                        sleep 5
-                        echo "Removing old WAR and deploying new one..."
-                        rm -rf $TOMCAT_HOME/webapps/new-java-project*
-                        mv /home/ec2-user/new-java-project-1.0-SNAPSHOT.war $TOMCAT_HOME/webapps/
-                        echo "Starting Tomcat..."
-                        $TOMCAT_HOME/bin/startup.sh
-                        echo "Deployment completed."
-                        ENDSSH
+                        # Deploy WAR on remote Tomcat
+                        ssh -o StrictHostKeyChecking=no ec2-user@54.227.175.225 << 'EOF'
+TOMCAT_HOME=/home/ec2-user/tomcat10
+echo "Stopping Tomcat if running..."
+$TOMCAT_HOME/bin/shutdown.sh || true
+sleep 5
+echo "Removing old WAR and deploying new one..."
+rm -rf $TOMCAT_HOME/webapps/new-java-project*
+mv /home/ec2-user/new-java-project-1.0-SNAPSHOT.war $TOMCAT_HOME/webapps/
+echo "Starting Tomcat..."
+$TOMCAT_HOME/bin/startup.sh
+echo "Deployment completed."
+EOF
                     '''
                 }
             }
@@ -61,7 +65,7 @@ pipeline {
             echo 'Pipeline completed successfully!'
         }
         failure {
-            echo 'Pipeline failed. Check the logs.'
+            echo 'Pipeline failed. Check the logs!'
         }
     }
 }
