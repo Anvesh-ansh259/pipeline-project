@@ -25,7 +25,7 @@ pipeline {
 
         stage('Deploy to Tomcat') {
             steps {
-                sshagent (credentials: ['ec2-redhat-key']) {
+                sshagent (credentials: ['ec2-ssh-key']) {
                     sh """
                     # Copy WAR to Tomcat server
                     scp -o StrictHostKeyChecking=no new-java-project/target/new-java-project.war ec2-user@54.227.175.225:/home/ec2-user/
