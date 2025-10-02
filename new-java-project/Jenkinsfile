@@ -1,57 +1,28 @@
 pipeline {
-    agent { label 'java-agent' } // Run on your Java agent
+    agent { label 'java-agent' } 
 
     environment {
-        // Optional: define workspace variable
-        WORKSPACE_DIR = "${env.WORKSPACE}"
+        // Remote server info
+        REMOTE_USER = 'ec2-user'
+        REMOTE_HOST = '54.227.175.225'
+        TOMCAT_HOME = '/home/ec2-user/tomcat10'
+        WAR_NAME = 'new-java-project-1.0-SNAPSHOT.war'
     }
 
     stages {
+
+        stage('Clean Workspace') {
+            steps {
+                deleteDir()
+            }
+        }
+
         stage('Checkout SCM') {
             steps {
-                git branch: 'main', 
+                git branch: 'main',
                     url: 'https://github.com/Anvesh-ansh259/pipeline-project.git',
-                    credentialsId: 'github-pat' // your GitHub credential ID
+                    credentialsId: 'github-pat'
             }
         }
 
         stage('Build WAR') {
-            steps {
-                dir('new-java-project') {
-                    sh 'mvn clean package -DskipTests'
-                }
-            }
-        }
-
-        stage('Deploy to Tomcat') {
-            steps {
-                sshagent(['ec2-ssh-key']) {
-                    sh '''
-                    # Copy WAR to remote server
-                    scp -o StrictHostKeyChecking=no $WORKSPACE/new-java-project/target/new-java-project-1.0-SNAPSHOT.war \
-                    ec2-user@54.227.175.225:/home/ec2-user/
-
-                    # Deploy on Tomcat
-                    ssh -o StrictHostKeyChecking=no ec2-user@54.227.175.225 << EOF
-TOMCAT_HOME=/home/ec2-user/tomcat10
-\$TOMCAT_HOME/bin/shutdown.sh || true
-sleep 5
-rm -rf \$TOMCAT_HOME/webapps/new-java-project*
-mv /home/ec2-user/new-java-project-1.0-SNAPSHOT.war \$TOMCAT_HOME/webapps/new-java-project.war
-\$TOMCAT_HOME/bin/startup.sh
-EOF
-                    '''
-                }
-            }
-        }
-    }
-
-    post {
-        success {
-            echo "Deployment completed successfully!"
-        }
-        failure {
-            echo "Deployment failed. Check the logs."
-        }
-    }
-}
