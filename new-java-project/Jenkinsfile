@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'Java-agent' }
+    agent { label 'java-agent' }
 
     stages {
         stage('Clean Workspace') {
