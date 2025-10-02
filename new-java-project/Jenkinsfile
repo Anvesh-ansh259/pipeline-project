@@ -1,10 +1,9 @@
 pipeline {
-    agent any
+    agent { label 'Java-agent' }
 
     stages {
         stage('Clean Workspace') {
             steps {
-                // Deletes entire workspace before starting
                 deleteDir()
             }
         }
@@ -15,24 +14,47 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Build WAR') {
             steps {
-                // Change to the folder containing pom.xml
                 dir('new-java-project') {
-                    sh 'mvn clean package'
+                    // Build WAR without running tests
+                    sh 'mvn clean package -DskipTests'
                 }
             }
         }
 
-        stage('Start App') {
+        stage('Deploy to Tomcat') {
             steps {
                 sshagent (credentials: ['1f606acc-0968-4f43-854a-89eca8d4a32d']) {
                     sh """
-                    ssh -o StrictHostKeyChecking=no ec2-user@54.226.118.108 \\
-                    'nohup java -jar /home/ec2-user/workspace/new-java-project/target/new-java-project-1.0-SNAPSHOT.jar > /home/ec2-user/app.log 2>&1 < /dev/null &'
+                    # Copy WAR to Tomcat server
+                    scp -o StrictHostKeyChecking=no new-java-project/target/new-java-project.war ec2-user@13.220.51.85:/home/ec2-user/
+
+                    # Deploy WAR on Tomcat
+                    ssh -o StrictHostKeyChecking=no ec2-user@13.220.51.85 '
+                        TOMCAT_HOME=/opt/tomcat9
+                        # Stop Tomcat if running
+                        \$TOMCAT_HOME/bin/shutdown.sh || true
+                        sleep 5
+                        # Remove old deployment
+                        rm -rf \$TOMCAT_HOME/webapps/new-java-project*
+                        # Copy new WAR
+                        cp /home/ec2-user/new-java-project.war \$TOMCAT_HOME/webapps/
+                        # Start Tomcat
+                        \$TOMCAT_HOME/bin/startup.sh
+                    '
                     """
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo "Deployment completed successfully!"
+        }
+        failure {
+            echo "Deployment failed. Check the logs."
         }
     }
 }
