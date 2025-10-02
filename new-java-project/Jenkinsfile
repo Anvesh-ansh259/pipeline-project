@@ -4,13 +4,12 @@ pipeline {
     environment {
         GIT_REPO = 'https://github.com/Anvesh-ansh259/pipeline-project.git'
         BRANCH = 'main'
-        TOMCAT_HOME = '/home/ec2-user/tomcat10'
     }
 
     stages {
         stage('Clean Workspace') {
             steps {
-                echo 'Cleaning workspace'
+                echo 'Cleaning workspace...'
                 deleteDir()
             }
         }
@@ -38,10 +37,10 @@ pipeline {
                     sh '''
                         WAR_FILE=new-java-project/target/new-java-project-1.0-SNAPSHOT.war
                         scp -o StrictHostKeyChecking=no $WAR_FILE ec2-user@54.227.175.225:/home/ec2-user/
-                        
-                        ssh -o StrictHostKeyChecking=no ec2-user@54.227.175.225 << 'EOF'
+
+                        ssh -o StrictHostKeyChecking=no ec2-user@54.227.175.225 'bash -s' << 'ENDSSH'
                         TOMCAT_HOME=/home/ec2-user/tomcat10
-                        echo "Stopping Tomcat..."
+                        echo "Stopping Tomcat if running..."
                         $TOMCAT_HOME/bin/shutdown.sh || true
                         sleep 5
                         echo "Removing old WAR and deploying new one..."
@@ -49,7 +48,8 @@ pipeline {
                         mv /home/ec2-user/new-java-project-1.0-SNAPSHOT.war $TOMCAT_HOME/webapps/
                         echo "Starting Tomcat..."
                         $TOMCAT_HOME/bin/startup.sh
-                        EOF
+                        echo "Deployment completed."
+                        ENDSSH
                     '''
                 }
             }
@@ -58,10 +58,10 @@ pipeline {
 
     post {
         success {
-            echo 'Deployment completed successfully!'
+            echo 'Pipeline completed successfully!'
         }
         failure {
-            echo 'Deployment failed. Check the logs.'
+            echo 'Pipeline failed. Check the logs.'
         }
     }
 }
