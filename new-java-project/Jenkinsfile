@@ -33,7 +33,7 @@ pipeline {
 
         stage('Deploy to Tomcat') {
             steps {
-                sshagent(['ec2-user']) {
+                sshagent(['ec2-ssh-key']) {
                     echo 'Deploying WAR to Tomcat...'
                     sh '''
                         WAR_FILE=new-java-project/target/new-java-project-1.0-SNAPSHOT.war
