@@ -25,13 +25,13 @@ pipeline {
 
         stage('Deploy to Tomcat') {
             steps {
-                sshagent (credentials: ['1f606acc-0968-4f43-854a-89eca8d4a32d']) {
+                sshagent (credentials: ['ec2-redhat-key']) {
                     sh """
                     # Copy WAR to Tomcat server
-                    scp -o StrictHostKeyChecking=no new-java-project/target/new-java-project.war ec2-user@13.220.51.85:/home/ec2-user/
+                    scp -o StrictHostKeyChecking=no new-java-project/target/new-java-project.war ec2-user@54.227.175.225:/home/ec2-user/
 
                     # Deploy WAR on Tomcat
-                    ssh -o StrictHostKeyChecking=no ec2-user@13.220.51.85 '
+                    ssh -o StrictHostKeyChecking=no ec2-user@54.227.175.225 '
                         TOMCAT_HOME=/opt/tomcat9
                         # Stop Tomcat if running
                         \$TOMCAT_HOME/bin/shutdown.sh || true
