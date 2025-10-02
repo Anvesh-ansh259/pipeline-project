@@ -2,54 +2,38 @@ pipeline {
     agent { label 'java-agent' }
 
     stages {
-        stage('Clean Workspace') {
-            steps {
-                deleteDir()
-            }
-        }
-
         stage('Checkout') {
             steps {
-                checkout scm
+                git branch: 'main', url: 'https://github.com/Anvesh-ansh259/pipeline-project.git'
             }
         }
 
         stage('Build WAR') {
             steps {
                 dir('new-java-project') {
-                    // Build WAR without running tests
                     sh 'mvn clean package -DskipTests'
                 }
             }
         }
 
         stage('Deploy to Tomcat') {
-        sshagent(['ec2-ssh-key']) {
-        sh '''
-        scp -o StrictHostKeyChecking=no $WORKSPACE/new-java-project/target/new-java-project-1.0-SNAPSHOT.war \
-        ec2-user@54.227.175.225:/home/ec2-user/
+            steps {
+                sshagent(['ec2-ssh-key']) {
+                    sh '''
+                    scp -o StrictHostKeyChecking=no $WORKSPACE/new-java-project/target/new-java-project-1.0-SNAPSHOT.war \
+                    ec2-user@54.227.175.225:/home/ec2-user/
 
-        ssh -o StrictHostKeyChecking=no ec2-user@54.227.175.225 << EOF
-        TOMCAT_HOME=/home/ec2-user/tomcat10
-        \$TOMCAT_HOME/bin/shutdown.sh || true
-        sleep 5
-        rm -rf \$TOMCAT_HOME/webapps/new-java-project*
-        mv /home/ec2-user/new-java-project-1.0-SNAPSHOT.war \$TOMCAT_HOME/webapps/new-java-project.war
-        \$TOMCAT_HOME/bin/startup.sh
-        EOF
-        '''
+                    ssh -o StrictHostKeyChecking=no ec2-user@54.227.175.225 << EOF
+                    TOMCAT_HOME=/home/ec2-user/tomcat10
+                    \$TOMCAT_HOME/bin/shutdown.sh || true
+                    sleep 5
+                    rm -rf \$TOMCAT_HOME/webapps/new-java-project*
+                    mv /home/ec2-user/new-java-project-1.0-SNAPSHOT.war \$TOMCAT_HOME/webapps/new-java-project.war
+                    \$TOMCAT_HOME/bin/startup.sh
+                    EOF
+                    '''
+                }
             }
-          }
-
-        }
-    }
-
-    post {
-        success {
-            echo "Deployment completed successfully!"
-        }
-        failure {
-            echo "Deployment failed. Check the logs."
         }
     }
 }
