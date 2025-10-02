@@ -1,8 +1,7 @@
 pipeline {
-    agent { label 'java-agent' } 
+    agent { label 'java-agent' }
 
     environment {
-        // Remote server info
         REMOTE_USER = 'ec2-user'
         REMOTE_HOST = '54.227.175.225'
         TOMCAT_HOME = '/home/ec2-user/tomcat10'
@@ -26,3 +25,16 @@ pipeline {
         }
 
         stage('Build WAR') {
+            steps {
+                dir('new-java-project') {
+                    sh 'mvn clean package -DskipTests'
+                }
+            }
+        }
+
+        stage('Deploy to Tomcat') {
+            steps {
+                sshagent(['ec2-ssh-key']) {
+                    sh """
+                    # Copy WAR to remote server
+                    scp -o StrictHostKeyChec
