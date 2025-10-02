@@ -1,32 +1,31 @@
 pipeline {
-    agent { label 'java-agent' }
+    agent { label 'agent1' }
 
     environment {
-        REMOTE_USER = 'ec2-user'
-        REMOTE_HOST = '54.227.175.225'
+        GIT_REPO = 'https://github.com/Anvesh-ansh259/pipeline-project.git'
+        BRANCH = 'main'
         TOMCAT_HOME = '/home/ec2-user/tomcat10'
-        WAR_NAME = 'new-java-project-1.0-SNAPSHOT.war'
     }
 
     stages {
-
         stage('Clean Workspace') {
             steps {
+                echo 'Cleaning workspace'
                 deleteDir()
             }
         }
 
-        stage('Checkout SCM') {
+        stage('Checkout') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/Anvesh-ansh259/pipeline-project.git',
-                    credentialsId: 'github-pat'
+                echo "Cloning the repo from GitHub..."
+                git branch: "${BRANCH}", url: "${GIT_REPO}"
             }
         }
 
         stage('Build WAR') {
             steps {
                 dir('new-java-project') {
+                    echo 'Building WAR file with Maven...'
                     sh 'mvn clean package -DskipTests'
                 }
             }
@@ -35,6 +34,34 @@ pipeline {
         stage('Deploy to Tomcat') {
             steps {
                 sshagent(['ec2-ssh-key']) {
-                    sh """
-                    # Copy WAR to remote server
-                    scp -o StrictHostKeyChec
+                    echo 'Deploying WAR to Tomcat...'
+                    sh '''
+                        WAR_FILE=new-java-project/target/new-java-project-1.0-SNAPSHOT.war
+                        scp -o StrictHostKeyChecking=no $WAR_FILE ec2-user@54.227.175.225:/home/ec2-user/
+                        
+                        ssh -o StrictHostKeyChecking=no ec2-user@54.227.175.225 << 'EOF'
+                        TOMCAT_HOME=/home/ec2-user/tomcat10
+                        echo "Stopping Tomcat..."
+                        $TOMCAT_HOME/bin/shutdown.sh || true
+                        sleep 5
+                        echo "Removing old WAR and deploying new one..."
+                        rm -rf $TOMCAT_HOME/webapps/new-java-project*
+                        mv /home/ec2-user/new-java-project-1.0-SNAPSHOT.war $TOMCAT_HOME/webapps/
+                        echo "Starting Tomcat..."
+                        $TOMCAT_HOME/bin/startup.sh
+                        EOF
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Deployment completed successfully!'
+        }
+        failure {
+            echo 'Deployment failed. Check the logs.'
+        }
+    }
+}
