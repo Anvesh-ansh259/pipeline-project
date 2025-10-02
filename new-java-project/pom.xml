@@ -17,11 +17,11 @@
     </properties>
 
     <dependencies>
-        <!-- Servlet API provided by Tomcat -->
+        <!-- Servlet API provided by Tomcat 10 (Servlet 6.0) -->
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
-            <version>5.0.0</version>
+            <version>6.0.0</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -33,6 +33,10 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                </configuration>
             </plugin>
 
             <!-- WAR Plugin -->
