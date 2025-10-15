@@ -1,62 +1,104 @@
 pipeline {
-    agent { label 'agent1' }
+    agent { label 'sonarqube-node' }
 
     environment {
         GIT_REPO = 'https://github.com/Anvesh-ansh259/pipeline-project.git'
         BRANCH = 'main'
     }
-    
+
     stages {
-        stage('Clean Workspace') {
+
+        stage('Checkout') {
             steps {
-                echo 'Cleaning workspace'
-                deleteDir()
+                echo '📥 Cloning repository...'
+                git branch: "${BRANCH}", url: "${GIT_REPO}"
             }
         }
+
+        stage('Prepare Tools') {
+            steps {
+                echo '🧰 Installing required tools...'
+                sh '''
+                    set -e
+                    # Update and install Python3/pip3 if missing
+                    if ! command -v pip3 &>/dev/null; then
+                        sudo yum install -y python3 python3-pip || true
+                    fi
+
+                    # Install cmakelint
+                    pip3 install --quiet cmakelint
+
+                    # Install dos2unix
+                    if ! command -v dos2unix &>/dev/null; then
+                        sudo yum install -y dos2unix || true
+                    fi
+
+                    # Install cmake
+                    if ! command -v cmake &>/dev/null; then
+                        sudo yum install -y epel-release || true
+                        sudo yum install -y cmake || true
+                    fi
+
+                    # Install GCC/G++
+                    if ! command -v gcc &>/dev/null; then
+                        sudo yum install -y gcc gcc-c++ || true
+                    fi
+                '''
+            }
+        }
+
         stage('Lint') {
             steps {
-                echo "Cloning the repo from Gitlab ........."
-                git branch: "${BRANCH}",
-                    url: "${GIT_REPO}",
-                    credentialsId: 'github-cred'
+                echo '🔍 Running lint checks on src/main.c...'
+                sh '''
+                    mkdir -p reports
+                    if [ -f src/main.c ]; then
+                        cmakelint src/main.c > reports/lint_report.txt || true
+                    else
+                        echo "❌ src/main.c not found!"
+                        exit 1
+                    fi
+                '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'reports/lint_report.txt', fingerprint: true
+                    fingerprint 'src/main.c'
+                }
             }
         }
+
         stage('Build') {
             steps {
-                sh 'dos2unix build.sh'
-                sh 'chmod +x build.sh'
-                sh 'bash build.sh'
+                echo '⚙️ Running build.sh...'
+                sh '''
+                    if [ -f build.sh ]; then
+                        dos2unix build.sh
+                        chmod +x build.sh
+                        ./build.sh
+                    else
+                        echo "❌ build.sh not found!"
+                        exit 1
+                    fi
+                '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'build/**/*', fingerprint: true, allowEmptyArchive: true
+                }
             }
         }
     }
 
     post {
-        success {
-            echo '✅ Build Success!'
-            emailext (
-                subject: "✅ Build Success: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
-                body: """<p>Build succeeded in job <b>${env.JOB_NAME}</b> [#${env.BUILD_NUMBER}]</p>
-                         <p>Check console: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>""",
-                to: 'anveshvarekar@gmail.com'
-            )
+        always {
+            echo '🏁 Pipeline finished.'
         }
-        unstable {
-            echo '⚠️ Build marked as UNSTABLE!'
-            emailext (
-                subject: "⚠️ Build Unstable: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
-                body: """<p>Build became <b>UNSTABLE</b> in job <b>${env.JOB_NAME}</b> [#${env.BUILD_NUMBER}]</p>
-                         <p>Check console: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>""",
-                to: 'anveshvarekar@gmail.com'
-            )
+        success {
+            echo '✅ Build and lint completed successfully!'
         }
         failure {
-            echo '❌ Build failed!'
-            emailext (
-                subject: "❌ Build Failed: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
-                body: """<p>Build failed in job <b>${env.JOB_NAME}</b> [#${env.BUILD_NUMBER}]</p>
-                         <p>Check console: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>""",
-                to: 'anveshvarekar@gmail.com'
-            )
+            echo '❌ Pipeline failed. Check logs.'
         }
     }
 }
