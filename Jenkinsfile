@@ -20,28 +20,26 @@ pipeline {
                 echo '🧰 Installing required tools...'
                 sh '''
                     set -e
-                    # Update and install Python3/pip3 if missing
-                    if ! command -v pip3 &>/dev/null; then
-                        sudo yum install -y python3 python3-pip || true
+
+                    # Detect package manager (Ubuntu/Debian vs CentOS)
+                    if command -v apt-get &>/dev/null; then
+                        echo "Detected Ubuntu/Debian system..."
+                        sudo apt-get update -y
+                        sudo apt-get install -y python3 python3-pip cmake dos2unix gcc g++ || true
+                    elif command -v yum &>/dev/null; then
+                        echo "Detected RHEL/CentOS system..."
+                        sudo yum install -y python3 python3-pip cmake dos2unix gcc gcc-c++ || true
+                    else
+                        echo "❌ Unsupported OS - no apt-get or yum found."
+                        exit 1
                     fi
 
-                    # Install cmakelint
-                    pip3 install --quiet cmakelint
-
-                    # Install dos2unix
-                    if ! command -v dos2unix &>/dev/null; then
-                        sudo yum install -y dos2unix || true
-                    fi
-
-                    # Install cmake
-                    if ! command -v cmake &>/dev/null; then
-                        sudo yum install -y epel-release || true
-                        sudo yum install -y cmake || true
-                    fi
-
-                    # Install GCC/G++
-                    if ! command -v gcc &>/dev/null; then
-                        sudo yum install -y gcc gcc-c++ || true
+                    # Install cmakelint using pip3
+                    if command -v pip3 &>/dev/null; then
+                        pip3 install --quiet cmakelint || true
+                    else
+                        echo "❌ pip3 not found even after install."
+                        exit 1
                     fi
                 '''
             }
