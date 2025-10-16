@@ -13,14 +13,9 @@ pipeline {
                 echo 'Installing required tools...'
                 sh '''
                     set -e
-
-                    # Update and install Python3, pip, unzip, curl
                     sudo apt-get update -y
                     sudo apt-get install -y python3 python3-pip unzip curl
-
-                    # Install cmakelint safely (Python 3.12+)
                     pip3 install --break-system-packages cmakelint || true
-
                     echo "✅ Tools are ready."
                 '''
             }
@@ -85,11 +80,18 @@ pipeline {
                           -Dsonar.organization=${SONAR_ORGANIZATION} \
                           -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
                           -Dsonar.sources=. \
-                          -Dsonar.host.url=https://sonarcloud.io \
-                          -Dsonar.c.file.suffixes=- \
-                          -Dsonar.cpp.file.suffixes=- \
-                          -Dsonar.objc.file.suffixes=-
+                          -Dsonar.host.url=https://sonarcloud.io
                     '''
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                echo 'Waiting for SonarQube Quality Gate...'
+                // This will wait for SonarCloud to finish analysis
+                timeout(time: 10, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
