@@ -80,7 +80,10 @@ pipeline {
                           -Dsonar.organization=${SONAR_ORGANIZATION} \
                           -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
                           -Dsonar.sources=. \
-                          -Dsonar.host.url=https://sonarcloud.io
+                          -Dsonar.host.url=https://sonarcloud.io \
+                          -Dsonar.c.file.suffixes=- \
+                          -Dsonar.cpp.file.suffixes=- \
+                          -Dsonar.objc.file.suffixes=-
                     '''
                 }
             }
@@ -88,8 +91,7 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                echo 'Waiting for SonarQube Quality Gate...'
-                // This will wait for SonarCloud to finish analysis
+                echo 'Waiting for SonarCloud Quality Gate...'
                 timeout(time: 10, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
@@ -99,10 +101,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ Pipeline completed successfully!'
+            echo '✅ Pipeline completed successfully and passed SonarCloud Quality Gate!'
         }
         failure {
-            echo '❌ Pipeline failed. Check logs or SonarCloud dashboard.'
+            echo '❌ Pipeline failed. Check Jenkins logs or SonarCloud dashboard.'
         }
     }
 }
