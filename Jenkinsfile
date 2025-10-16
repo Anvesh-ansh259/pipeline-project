@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'linuxgit' }
+    agent { label 'sonarqube-node' }
 
     environment {
         // GitHub Repository
