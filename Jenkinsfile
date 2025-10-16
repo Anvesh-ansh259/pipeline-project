@@ -85,7 +85,10 @@ pipeline {
                           -Dsonar.organization=${SONAR_ORGANIZATION} \
                           -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
                           -Dsonar.sources=. \
-                          -Dsonar.host.url=https://sonarcloud.io
+                          -Dsonar.host.url=https://sonarcloud.io \
+                          -Dsonar.c.file.suffixes=- \
+                          -Dsonar.cpp.file.suffixes=- \
+                          -Dsonar.objc.file.suffixes=-
                     '''
                 }
             }
