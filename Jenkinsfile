@@ -16,7 +16,7 @@ pipeline {
                     sudo apt-get update -y
                     sudo apt-get install -y python3 python3-pip unzip curl
                     pip3 install --break-system-packages cmakelint || true
-                    echo "✅ Tools are ready."
+                    echo "✅ Tools are ready. "
                 '''
             }
         }
