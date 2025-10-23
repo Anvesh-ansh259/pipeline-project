@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'sonarqube-node' }  // Use your specified agent
+    agent any  // Use any available agent
 
     stages {
         stage('Webhook Test') {
